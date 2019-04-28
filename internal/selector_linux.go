@@ -5,9 +5,9 @@ import (
 )
 
 type SelectorKey struct {
-	fd    int
-	event uint32
-	data  map[uint32]interface{}
+	Fd    int
+	Event uint32
+	Data  interface{}
 }
 
 type Selector struct {
@@ -26,6 +26,10 @@ func New(size int) *Selector {
 	return p
 }
 
+func (p *Selector) GetData(fd int) interface{} {
+	return p.Keys[fd].Data
+}
+
 func (p *Selector) Close() {
 	if err := syscall.Close(p.epfd); err != nil {
 		panic(err)
@@ -39,59 +43,52 @@ func (p *Selector) Register(fd int, mask uint32, data interface{}) error {
 	}
 
 	if p.Keys[fd] == nil {
-		p.Keys[fd] = &SelectorKey{fd: fd, event: EV_NONE, data: make(map[uint32]interface{})}
+		p.Keys[fd] = &SelectorKey{Fd: fd, Event: EV_NONE}
 	}
 	key := p.Keys[fd]
 
 	ee := &syscall.EpollEvent{Fd: int32(fd)}
 	var op int
-	if key.event == EV_NONE {
+	if key.Event == EV_NONE {
 		op = syscall.EPOLL_CTL_ADD
 	} else {
 		op = syscall.EPOLL_CTL_MOD
 	}
 
-	key.event |= mask
+	key.Event = mask
 	if err := p.setRawEvent(ee, mask, key, data); err != nil {
-		return err
+		panic(err)
 	}
 
 	if err := syscall.EpollCtl(p.epfd, op, fd, ee); err != nil {
-		return err
+		panic(err)
 	}
-
 	return nil
 }
 
-func (p *Selector) Unregister(fd int, mask uint32) error {
+func (p *Selector) Unregister(fd int, mask uint32) (*SelectorKey, error) {
 	if fd > len(p.Keys) {
-		return &FdExecLimit{fd}
+		return nil, &FdExecLimit{fd}
 	}
 
 	key := p.Keys[fd]
-	if key == nil || key.event&mask == 0 {
-		return nil
+	if key == nil || key.Event&mask == 0 || key.Event != mask {
+		return nil, nil
 	}
-	key.event &= ^mask
 
-	var op int
-	if key.event != 0 {
-		op = syscall.EPOLL_CTL_MOD
-	} else {
-		op = syscall.EPOLL_CTL_DEL
-		p.Keys[fd] = nil
-	}
+	p.Keys[fd] = nil
+	op := syscall.EPOLL_CTL_DEL
 
 	ee := &syscall.EpollEvent{Fd: int32(fd)}
 	if err := p.setRawEvent(ee, mask, key, nil); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := syscall.EpollCtl(p.epfd, op, fd, ee); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return key, nil
 }
 
 func (p *Selector) GetSelectorKey(fd int) *SelectorKey {
@@ -124,10 +121,10 @@ func (p *Selector) Poll(t int) ([]*SelectorKey, []uint32, error) {
 func (p *Selector) setRawEvent(e *syscall.EpollEvent, mask uint32, key *SelectorKey, data interface{}) error {
 	if mask&EV_READABLE != 0 {
 		e.Events |= syscall.EPOLLIN
-		key.data[EV_READABLE] = data
+		key.Data = data
 	} else if mask&EV_WRITABLE != 0 {
 		e.Events |= syscall.EPOLLOUT
-		key.data[EV_WRITABLE] = data
+		key.Data = data
 	} else {
 		return &UnknownMask{mask}
 	}
