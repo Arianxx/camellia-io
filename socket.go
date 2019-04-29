@@ -67,18 +67,23 @@ func NewListener(network, addr string, loop *EventLoop) (*Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = syscall.Bind(sock.fd, sock.sa)
-	if err != nil {
-		_ = sock.Close()
-		return nil, err
-	}
-	err = syscall.Listen(sock.fd, 1024)
-	if err != nil {
-		_ = sock.Close()
-		return nil, err
-	}
 
 	return &Listener{sock}, nil
+}
+
+func (l *Listener) BindAndListen() error {
+	var err error
+	err = syscall.Bind(l.fd, l.sa)
+	if err != nil {
+		_ = l.Close()
+		return err
+	}
+	err = syscall.Listen(l.fd, 1024)
+	if err != nil {
+		_ = l.Close()
+		return err
+	}
+	return nil
 }
 
 func (l *Listener) RegisterAccept() error {
