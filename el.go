@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// EventLoop is the core of this io framework. It schedules the tasks in the loop and dispatchs the coming events.
 type EventLoop struct {
 	*internal.Selector
 	events         []*Event
@@ -14,6 +15,7 @@ type EventLoop struct {
 	periodTasks    []*PeriodTask
 }
 
+// NewEventLoop creates a new eventloop.
 func NewEventLoop() *EventLoop {
 	return &EventLoop{
 		Selector:    internal.New(1024),
@@ -23,18 +25,23 @@ func NewEventLoop() *EventLoop {
 	}
 }
 
+// AddEvent adds a event to the eventloop.
 func (el *EventLoop) AddEvent(e *Event) {
 	el.events = append(el.events, e)
 }
 
+// AddPeriodTask adds a period task to the eventloop.
 func (el *EventLoop) AddPeriodTask(t *PeriodTask) {
 	el.periodTasks = append(el.periodTasks, t)
 }
 
+// SetTriggerDataPtr used to transmit data in library event(e.g. Socket) and user defined event.
+// The data ptr will be used as the second parameter of the user event for the next call.
 func (el *EventLoop) SetTriggerDataPtr(data interface{}) {
 	el.triggerDataPtr = &data
 }
 
+// Run blocks the thread to serve until the server has been broken.
 func (el *EventLoop) Run() {
 	for _, e := range el.events {
 		if e.Serving != nil {
@@ -51,6 +58,7 @@ func (el *EventLoop) Run() {
 	}
 }
 
+// Tick waits one cycle of the whole eventloop and processes the corresponding events.
 func (el *EventLoop) Tick() {
 	var (
 		ed        EventData
@@ -75,10 +83,12 @@ func (el *EventLoop) Tick() {
 	}
 }
 
+// Register registers a event in the internal selector.
 func (el *EventLoop) Register(fd int, mask uint32, e EventProc, d interface{}) error {
 	return el.Selector.Register(fd, mask, EventData{e, d})
 }
 
+// Done broke the running of the server.
 func (el *EventLoop) Done() {
 	el.done = true
 }
