@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 	"github.com/arianxx/camellia-io"
-	"time"
 )
 
-func serving(el *camellia.EventLoop, _ *interface{}) {
+func whenServing(el *camellia.EventLoop, _ *interface{}) {
 	fmt.Println("Server start...")
 }
 
-func accept(el *camellia.EventLoop, dataPtr *interface{}) {
+func whenAccept(el *camellia.EventLoop, dataPtr *interface{}) {
 	data := (*dataPtr).([]string)
 	fmt.Println("Accept: ", data)
 }
@@ -22,34 +21,20 @@ func echo(el *camellia.EventLoop, connPtr *interface{}) {
 	conn.Write(msg)
 }
 
-func peridEcho(el *camellia.EventLoop, _ *interface{}) {
-	fmt.Println("1s elapsed")
-}
-
 func main() {
 	event := camellia.Event{
-		Serving: serving,
-		Open:    accept,
+		Serving: whenServing,
+		Open:    whenAccept,
 		Data:    echo,
 	}
-	loop := camellia.NewEventLoop()
-	loop.AddEvent(&event)
 
-	task := &camellia.PeriodTask{
-		Interval: time.Second,
-		Event:    peridEcho,
-	}
-	loop.AddPeriodTask(task)
-
-	lis, err := camellia.NewListener("tcp4", "127.0.0.1:12131", loop)
+	server, err := camellia.NewServer("tcp4", "127.0.0.1:12131")
 	if err != nil {
 		panic(err)
 	}
+	server.AddEvent(&event)
 
-	err = lis.RegisterAccept()
-	if err != nil {
+	if err := server.StartServe(); err != nil {
 		panic(err)
 	}
-
-	loop.Run()
 }
