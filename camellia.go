@@ -1,33 +1,24 @@
 package camellia
 
+// Server decorates some necessary components required to start to serve.
+// El is the server's internal eventloop.
+// Lis is a Listener slice listened on the machine.
 type Server struct {
 	El  *EventLoop
 	Lis []*Listener
 }
 
-func NewServer(network, addr string) (*Server, error) {
-	var (
-		el     = NewEventLoop()
-		server = &Server{
-			El:  el,
-			Lis: make([]*Listener, 0),
-		}
-	)
-
-	if err := server.AddListener(network, addr); err != nil {
-		return nil, err
+// NewServer create a new server.
+func NewServer() *Server {
+	return &Server{
+		El:  NewEventLoop(),
+		Lis: make([]*Listener, 0),
 	}
-
-	return server, nil
 }
 
-func (s *Server) AddListener(network, addr string) error {
-	listener, err := NewListener(network, addr, s.El)
-	if err != nil {
-		return err
-	}
-	s.Lis = append(s.Lis, listener)
-	return nil
+// AddListener add a listener to the server.
+func (s *Server) AddListener(l *Listener) {
+	s.Lis = append(s.Lis, l)
 }
 
 func (s *Server) AddEvent(e *Event) {
