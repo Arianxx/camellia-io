@@ -20,13 +20,10 @@ func main() {
 		Interval: 3 * time.Second,
 	}
 
-	server, err := camellia.NewServer("tcp4", "127.0.0.1:12131")
-	if err != nil {
-		panic(err)
-	}
+	server := camellia.NewServer()
 	server.AddPeriodTask(&t)
 
-	err = server.StartServe()
+	err := server.StartServe()
 	if err != nil {
 		panic(err)
 	}

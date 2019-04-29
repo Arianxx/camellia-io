@@ -28,10 +28,12 @@ func main() {
 		Data:    echo,
 	}
 
-	server, err := camellia.NewServer("tcp4", "127.0.0.1:12131")
+	server := camellia.NewServer()
+	lis, err := camellia.NewListener("tcp4", "127.0.0.1:12131", server.El)
 	if err != nil {
 		panic(err)
 	}
+	server.AddListener(lis)
 	server.AddEvent(&event)
 
 	if err := server.StartServe(); err != nil {
