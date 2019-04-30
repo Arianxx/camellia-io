@@ -121,11 +121,12 @@ func (l *Listener) acceptEvent(el *EventLoop, _ interface{}) Action {
 // Conn is the decorators of the Socket to process a specific connection.
 type Conn struct {
 	*Socket
+	ctx *interface{}
 }
 
 // NewConn creates a new Conn.
 func NewConn(fd int, sa syscall.Sockaddr, loop *EventLoop) (*Conn, error) {
-	conn := &Conn{&Socket{fd: fd, sa: sa, loop: loop}}
+	conn := &Conn{&Socket{fd: fd, sa: sa, loop: loop}, nil}
 	conn.in, conn.out = []byte{}, []byte{}
 	var err error
 	conn.network, conn.addr, conn.port, err = resolveSockaddrInfo(sa)
@@ -189,6 +190,16 @@ func (c *Conn) writeEvent(el *EventLoop, _ interface{}) Action {
 		_ = el.Register(c.fd, internal.EV_READABLE, c.readEvent, nil)
 	}
 	return action
+}
+
+// SetContext used to save context data that across the multi events triggered on this Conn.
+func (c *Conn) SetContext(data *interface{}) {
+	c.ctx = data
+}
+
+// GetContext used to get context data saved by SetContext.
+func (c *Conn) GetContext() *interface{} {
+	return c.ctx
 }
 
 func getSockAddr(network, addr string) (syscall.Sockaddr, error) {
