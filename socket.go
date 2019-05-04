@@ -121,9 +121,7 @@ func (l *Listener) acceptEvent(el *EventLoop, _ interface{}) Action {
 // Conn is the decorators of the Socket to process a specific connection.
 type Conn struct {
 	*Socket
-	ctx
-
-	interface{}
+	ctx interface{}
 }
 
 // NewConn creates a new Conn.
