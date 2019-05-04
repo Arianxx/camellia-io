@@ -121,7 +121,9 @@ func (l *Listener) acceptEvent(el *EventLoop, _ interface{}) Action {
 // Conn is the decorators of the Socket to process a specific connection.
 type Conn struct {
 	*Socket
-	ctx *interface{}
+	ctx
+
+	interface{}
 }
 
 // NewConn creates a new Conn.
@@ -193,12 +195,12 @@ func (c *Conn) writeEvent(el *EventLoop, _ interface{}) Action {
 }
 
 // SetContext used to save context data that across the multi events triggered on this Conn.
-func (c *Conn) SetContext(data *interface{}) {
+func (c *Conn) SetContext(data interface{}) {
 	c.ctx = data
 }
 
 // GetContext used to get context data saved by SetContext.
-func (c *Conn) GetContext() *interface{} {
+func (c *Conn) GetContext() interface{} {
 	return c.ctx
 }
 
